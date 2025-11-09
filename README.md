@@ -36,7 +36,6 @@ It connects Gmail and Google Sheets with an AI engine (OpenAI or Grok) to **anal
 
 ## 🗂️ Project Structure
 
-```bash
 email_agent/
 │
 ├── app.py                     # Main Streamlit dashboard and UI logic
@@ -53,6 +52,8 @@ email_agent/
 ├── requirements.txt           # Python dependencies
 ├── README.md                  # Project documentation (this file)
 └── venv/                      # Local virtual environment (ignored in Git)
+
+
 ⚙️ Setup Instructions
 1. Clone the Repository
 bash
@@ -165,56 +166,3 @@ Use expanders for sections	with st.expander("View Details"):	Keeps dashboard cle
 Add tabs for navigation	tab1, tab2 = st.tabs(["Dashboard", "Logs"])	Great for switching between analytics and raw data
 Add logo or header	st.image("assets/logo.png", width=120)	Place branding at the top
 
-📊 4. Designing Effective Analytics
-Keep it minimal: Avoid overcrowding with too many metrics.
-
-Use color psychology: Red for urgency, green for resolved, blue for neutral actions.
-
-Interactive filters: Add dropdowns or sliders for dates and urgency levels.
-
-Use tooltips: Help users interpret metrics clearly.
-
-🧰 Developer Notes
-When switching from OpenAI to Grok, update:
-
-toml
-Copy code
-[llm]
-provider = "grok"
-api_key = "your-grok-key"
-And edit libs/llm_client.py to load the relevant API client.
-
-Add custom logic for new analytics in app.py under the "Dashboard Metrics" section.
-
-Log errors and API timeouts gracefully — Streamlit’s st.error() helps display readable messages.
-
-To clean or rebuild data:
-
-bash
-Copy code
-python libs/gmail_to_sheets.py
-🚀 Future Enhancements
-Email intent classification (urgent, info, query, complaint)
-
-Sentiment tracking for responses
-
-Integration with Microsoft Outlook / Teams
-
-Dashboard export as PDF
-
-Role-based login for multiple staff
-
-🧑‍💻 Author
-Ajay Sumukh
-📍 Built for process automation and intelligent email management using Streamlit and AI.
-💡 "Turning inbox chaos into organized insight."
-
-🪪 License
-MIT License — Free for modification and distribution with attribution.
-
-yaml
-Copy code
-
----
-
-Would you like me to also generate a **`config.toml`** and **custom CSS snippet** that perfectly match your
