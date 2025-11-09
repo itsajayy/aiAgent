@@ -36,22 +36,8 @@ It connects Gmail and Google Sheets with an AI engine (OpenAI or Grok) to **anal
 
 ## 🗂️ Project Structure
 
-email_agent/
-│
-├── app.py                     # Main Streamlit dashboard and UI logic
-│
-├── libs/
-│   ├── gmail_to_sheets.py     # Handles Gmail API and Google Sheets sync
-│   ├── llm_client.py          # Connects to OpenAI / Grok to generate drafts
-│   ├── sheet_utils.py         # Sheet helper functions (read/write)
-│   └── utils.py               # Common functions (cleaning, parsing, etc.)
-│
-├── .streamlit/
-│   └── secrets.toml           # Stores API keys, sheet IDs, and credentials
-│
-├── requirements.txt           # Python dependencies
-├── README.md                  # Project documentation (this file)
-└── venv/                      # Local virtual environment (ignored in Git)
+<img width="747" height="468" alt="image" src="https://github.com/user-attachments/assets/f90ae865-b30e-4617-9d9b-a5969562991b" />
+
 
 
 ⚙️ Setup Instructions
