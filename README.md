@@ -115,11 +115,13 @@ textColor = "#111827"
 font = "sans serif"
 Restart Streamlit after saving.
 
-🧱 3. Layout Design Tips
-Goal	Code Snippet	Notes
-Two-column layout	col1, col2 = st.columns(2)	Use for summary stats and charts side-by-side
-Center align widgets	st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)	Helps with visual balance
-Use expanders for sections	with st.expander("View Details"):	Keeps dashboard clean
-Add tabs for navigation	tab1, tab2 = st.tabs(["Dashboard", "Logs"])	Great for switching between analytics and raw data
-Add logo or header	st.image("assets/logo.png", width=120)	Place branding at the top
+| Goal             | Snippet                                                       | Why                             |
+| ---------------- | ------------------------------------------------------------- | ------------------------------- |
+| Two columns      | `col1, col2 = st.columns(2)`                                  | KPIs + charts side-by-side      |
+| Tabs             | `tab1, tab2 = st.tabs(["Dashboard","Logs"])`                  | Separate analytics vs. raw data |
+| Compact sections | `with st.expander("Details"):`                                | Reduce clutter                  |
+| Center elements  | `st.markdown("<div style='text-align:center'>…</div>", True)` | Better visual balance           |
+| Brand header     | `st.image("assets/logo.png", width=120)`                      | Quick branding                  |
+
+
 
