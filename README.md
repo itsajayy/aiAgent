@@ -36,7 +36,7 @@ It connects Gmail and Google Sheets with an AI engine (OpenAI or Grok) to **anal
 
 ## 🗂️ Project Structure
 
-<img width="747" height="468" alt="image" src="https://github.com/user-attachments/assets/f90ae865-b30e-4617-9d9b-a5969562991b" />
+<img width="710" height="516" alt="image" src="https://github.com/user-attachments/assets/1d5eeab5-6b0b-4a62-8248-e61a9fae788e" />
 
 
 
