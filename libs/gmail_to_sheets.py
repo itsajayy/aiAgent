@@ -227,18 +227,21 @@ def load_student_database(gc, sheet_id):
         return pd.DataFrame()
 
 
-def append_to_email_sheet(gc, sheet_id, email_data_list):
-    """Append new emails to the 'Email' sheet in Google Sheets."""
+def append_to_email_sheet(gc, sheet_id, email_data_list, sheet_name="Email"):
+    """Append new emails to a sheet in Google Sheets.
+
+    Defaults to the 'Email' sheet unless another name is provided.
+    """
     try:
         sh = gc.open_by_key(sheet_id)
         
         # Try to open the "Email" sheet, create if doesn't exist
         try:
-            worksheet = sh.worksheet("Email")
-            print("Found existing 'Email' sheet")
+            worksheet = sh.worksheet(sheet_name)
+            print(f"Found existing '{sheet_name}' sheet")
         except:
-            print("Creating new 'Email' sheet...")
-            worksheet = sh.add_worksheet(title="Email", rows="1000", cols="10")
+            print(f"Creating new '{sheet_name}' sheet...")
+            worksheet = sh.add_worksheet(title=sheet_name, rows="1000", cols="10")
             # Add headers
             headers = ['Name', 'Email', 'UID', 'Time', 'Date', 'Subject', 'Content']
             worksheet.append_row(headers)
