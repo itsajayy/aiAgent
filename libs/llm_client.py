@@ -10,8 +10,23 @@ except Exception as e:
 
 
 # Initialize Groq client with key from Streamlit secrets or environment
-GROQ_API_KEY = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
-GROQ_MODEL = st.secrets.get("GROQ_MODEL") or os.getenv("GROQ_MODEL") or "llama-3.1-8b-instant"
+_groq_section = {}
+try:
+    _groq_section = st.secrets.get("groq") or {}
+except Exception:
+    _groq_section = {}
+
+GROQ_API_KEY = (
+    st.secrets.get("GROQ_API_KEY")
+    or _groq_section.get("api_key")
+    or os.getenv("GROQ_API_KEY")
+)
+GROQ_MODEL = (
+    st.secrets.get("GROQ_MODEL")
+    or _groq_section.get("model")
+    or os.getenv("GROQ_MODEL")
+    or "llama-3.1-8b-instant"
+)
 
 _groq_client = None
 if GROQ_API_KEY and Groq is not None:
@@ -26,7 +41,7 @@ def _require_groq():
         st.error("Missing 'groq' package. Add 'groq' to requirements.txt and install dependencies.")
         raise RuntimeError("groq package not available")
     if not GROQ_API_KEY:
-        st.error("GROQ_API_KEY not found in Streamlit secrets or environment.")
+        st.error("GROQ_API_KEY not found. Set either top-level GROQ_API_KEY or [groq].api_key in .streamlit/secrets.toml, or export GROQ_API_KEY.")
         raise RuntimeError("GROQ_API_KEY missing")
     if _groq_client is None:
         raise RuntimeError("Groq client not initialized")
