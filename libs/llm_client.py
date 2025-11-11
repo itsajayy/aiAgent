@@ -18,8 +18,10 @@ except Exception:
 
 GROQ_API_KEY = (
     st.secrets.get("GROQ_API_KEY")
+    or st.secrets.get("GROQ_API")
     or _groq_section.get("api_key")
     or os.getenv("GROQ_API_KEY")
+    or os.getenv("GROQ_API")
 )
 GROQ_MODEL = (
     st.secrets.get("GROQ_MODEL")
