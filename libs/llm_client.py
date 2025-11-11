@@ -1,73 +1,65 @@
-# libs/llm_client.py
 import os
 import streamlit as st
+from groq import Groq
+import gspread
+from google.oauth2.service_account import Credentials
 
-try:
-    from groq import Groq
-except Exception as e:
-    # Defer import error until used to keep app load resilient
-    Groq = None
-
-
-# Initialize Groq client with key from Streamlit secrets or environment
-_groq_section = {}
-try:
-    _groq_section = st.secrets.get("groq") or {}
-except Exception:
-    _groq_section = {}
-
+# === GROQ SETUP ===
 GROQ_API_KEY = (
-    st.secrets.get("GROQ_API_KEY")
-    or st.secrets.get("GROQ_API")
-    or _groq_section.get("api_key")
-    or os.getenv("GROQ_API_KEY")
+    st.secrets.get("GROQ_API")
+    or st.secrets.get("GROQ_API_KEY")
     or os.getenv("GROQ_API")
-)
-GROQ_MODEL = (
-    st.secrets.get("GROQ_MODEL")
-    or _groq_section.get("model")
-    or os.getenv("GROQ_MODEL")
-    or "llama-3.1-8b-instant"
+    or os.getenv("GROQ_API_KEY")
 )
 
-_groq_client = None
-if GROQ_API_KEY and Groq is not None:
-    _groq_client = Groq(api_key=GROQ_API_KEY)
-else:
-    # Surface actionable error if key or package missing when functions are called
-    pass
+if not GROQ_API_KEY:
+    st.error("GROQ API key not found. Set GROQ_API or GROQ_API_KEY in secrets or env.")
+    raise RuntimeError("Missing GROQ API key")
+
+client = Groq(api_key=GROQ_API_KEY)
 
 
-def _require_groq():
-    if Groq is None:
-        st.error("Missing 'groq' package. Add 'groq' to requirements.txt and install dependencies.")
-        raise RuntimeError("groq package not available")
-    if not GROQ_API_KEY:
-        st.error("GROQ_API_KEY not found. Set either top-level GROQ_API_KEY or [groq].api_key in .streamlit/secrets.toml, or export GROQ_API_KEY.")
-        raise RuntimeError("GROQ_API_KEY missing")
-    if _groq_client is None:
-        raise RuntimeError("Groq client not initialized")
-    return _groq_client
+# === GOOGLE SHEETS SETUP ===
+# Requires Streamlit secrets: "google_credentials" and "SHEET_ID"
+def connect_to_sheet():
+    """Connect to Google Sheets using service account from secrets.
 
-
-def _choices_content(resp) -> str:
+    Supports either `google_credentials` or `gcp_service_account` keys
+    inside `.streamlit/secrets.toml`.
+    """
     try:
-        # groq SDK returns OpenAI-compatible structure
-        content = resp.choices[0].message.get("content")  # type: ignore[attr-defined]
-        if content is not None:
-            return content
-    except Exception:
-        pass
-    # Fallback for attribute-style access
-    try:
-        return resp.choices[0].message.content  # type: ignore[attr-defined]
-    except Exception:
-        return ""
+        svc_info = (
+            st.secrets.get("google_credentials")
+            or st.secrets.get("gcp_service_account")
+        )
+        if not svc_info:
+            raise KeyError(
+                'Missing service account in secrets. Add either "google_credentials" or "gcp_service_account".'
+            )
+
+        creds = Credentials.from_service_account_info(
+            svc_info,
+            scopes=["https://www.googleapis.com/auth/spreadsheets"],
+        )
+        gs_client = gspread.authorize(creds)
+        sheet_id = st.secrets["SHEET_ID"]
+        return gs_client.open_by_key(sheet_id)
+    except Exception as e:
+        st.error(f"Error connecting to Google Sheets: {e}")
+        raise
 
 
-def generate_skeleton_openai(email_text: str, student_summary: str = None) -> str:
+# === FUNCTION 1: Generate Email Skeleton ===
+def generate_email_skeleton(email_text: str, student_summary: str = None) -> str:
+    """
+    Generates a structured skeleton for a reply:
+    - Summarizes the email
+    - Lists what to include in the reply
+    - Suggests useful links/resources
+    - Adds a placeholder for the user’s draft
+    """
     prompt = f"""
-You are an assistant that creates a concise professional reply skeleton for an advisor responding to a student's email.
+You are an academic assistant who helps advisors draft responses to student emails.
 
 Student summary:
 {student_summary or 'N/A'}
@@ -75,46 +67,97 @@ Student summary:
 Incoming email:
 {email_text}
 
-Produce:
-1) A subject suggestion (single line)
-2) A short bullet-point skeleton for the reply (2-6 bullets)
-3) Any recommended resources (URLs or names)
-Return as JSON with keys: subject, bullets, resources
+Generate a JSON response with:
+1. "summary": A concise summary of the student's email (2-3 sentences)
+2. "reply_points": Bullet points of what the advisor should include in their reply
+3. "suggested_links": A list of URLs or resources based on the student's question
+4. "skeleton_reply": A short draft layout the user can fill in (with placeholders like {{student_name}}, {{resource_link}})
+5. "user_draft_space": A message prompting the user to input their final draft
+
+Example JSON structure:
+{{
+  "summary": "...",
+  "reply_points": ["...", "..."],
+  "suggested_links": ["...", "..."],
+  "skeleton_reply": "Hi {{student_name}},\\nThank you for reaching out...\\nRegards,\\n{{advisor_name}}",
+  "user_draft_space": "✍️ Please type your final draft below."
+}}
 """
-    client = _require_groq()
+
     resp = client.chat.completions.create(
-        model=GROQ_MODEL,
+        model="llama-3.1-8b-instant",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": "You are a helpful academic assistant."},
+            {"role": "user", "content": prompt},
         ],
-        max_tokens=300,
-        temperature=0.2
+        max_tokens=600,
+        temperature=0.3,
     )
 
-    return _choices_content(resp)
+    return resp.choices[0].message.content
 
-def critique_reply_openai(draft_text: str, original_email: str) -> str:
+
+# Backwards-compatible alias expected by app.py
+def generate_skeleton_openai(email_text: str, student_summary: str = None) -> str:
+    return generate_email_skeleton(email_text, student_summary)
+
+
+# === FUNCTION 2: Fact Check and Save ===
+def fact_check_and_save(user_draft: str, skeleton: str, email_text: str):
+    """
+    Fact-checks the user's draft against the skeleton + original email,
+    and saves it to Google Sheets if it passes.
+    """
     prompt = f"""
-You are an assistant that evaluates a reply draft vs an incoming email.
+You are a precise fact-checker.
 
-Incoming email:
-{original_email}
+Compare the following:
 
-Reply draft:
-{draft_text}
+Original Email:
+{email_text}
 
-Return a short JSON: {{ "answers_point": true/false, "issues": ["..."], "improvements": ["..."] }}
+Generated Skeleton:
+{skeleton}
+
+User Draft:
+{user_draft}
+
+Evaluate:
+- Does the user draft address the main points from the skeleton?
+- Is it factually consistent with the student's original email?
+- Does it maintain a polite and professional tone?
+
+Return a JSON:
+{{
+  "factually_correct": true/false,
+  "missing_points": ["..."],
+  "incorrect_info": ["..."],
+  "tone_feedback": "..."
+}}
 """
-    client = _require_groq()
+
     resp = client.chat.completions.create(
-        model=GROQ_MODEL,
+        model="llama-3.1-8b-instant",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": "You are a strict and helpful reviewer."},
+            {"role": "user", "content": prompt},
         ],
-        max_tokens=200,
-        temperature=0
+        max_tokens=400,
+        temperature=0.2,
     )
 
-    return _choices_content(resp)
+    result = resp.choices[0].message.content
+
+    # Save to Google Sheets only if factually_correct = true
+    if '"factually_correct": true' in result.lower():
+        try:
+            sheet = connect_to_sheet().worksheet("drafts")
+        except gspread.WorksheetNotFound:
+            sheet = connect_to_sheet().add_worksheet(title="drafts", rows=1000, cols=10)
+
+        sheet.append_row([email_text, skeleton, user_draft, result])
+        st.success("✅ Draft verified and saved to Google Sheets!")
+    else:
+        st.warning("⚠️ Draft not factually correct. Please revise before saving.")
+
+    return result
